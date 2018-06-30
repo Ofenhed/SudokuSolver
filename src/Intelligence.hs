@@ -2,9 +2,11 @@
 
 module Intelligence where
 import SudokuObject
-import Data.Vector ((!), find)
+import Data.Vector ((!), (!?), find)
 import Data.List ((\\), sortBy)
 import Data.Maybe (isNothing,isJust)
+
+import Debug.Trace
 
 related (x,y) = let boxX = quot x 3
                     boxY = quot y 3
@@ -22,7 +24,7 @@ reduce board pos =
   let Unspecified me = boardBoard board ! coordToPos pos
       related' = related pos
       others = map (((!) $ boardBoard board) . coordToPos) related'
-      specified = concat $ map (\x -> case x of Specified c -> [c] ; Unspecified c -> []) others
+      specified = concat $ map (\x -> case x of Specified c -> [c] ; Unspecified _ -> []) others
       possible = me \\ specified
       newMe = case possible
                 of [val] -> Specified val
@@ -41,22 +43,28 @@ permute board pos =
 
 bestPermute board =
   let allFields = map (\pos -> (pos, boardBoard board ! coordToPos pos)) allCoords
-      allUnspecified = filter (\(_, field) -> case field of Unspecified x -> True ; _ -> False) allFields
+      allUnspecified = filter (\(_, field) -> case field of Unspecified _ -> True ; _ -> False) allFields
       (bestPos,_):_ = sortBy (\(_, Unspecified x) (_, Unspecified y) -> compare (length x) (length y)) allUnspecified
     in bestPos
 
-solvable board = isNothing $ find (\x -> case x of Unspecified [] -> True ; _ -> False) (boardBoard board)
+data BoardStatus = Solvable | Solved | Unsolvable
 
-solved board = isNothing $ find (\x -> case x of Unspecified _ -> True ; _ -> False) (boardBoard board)
+boardStatus board = checkStatus 0 Solved
+  where
+  b = boardBoard board
+  checkStatus i s = case b !? i
+                      of Nothing -> s
+                         Just (Unspecified []) -> Unsolvable
+                         Just (Unspecified _) -> checkStatus (i+1) Solvable
+                         _ -> checkStatus (i+1) s
 
 solve board =
   let reduced = reduceAll board
-      reducedIsSolved = solved reduced
+      status = boardStatus reduced
       alternatives = permute reduced $ bestPermute reduced
-      reducedAlternatives = map reduceAll alternatives
-      solvableAlternatives = filter solvable reducedAlternatives
-      solvedAlternatives = filter (isJust) $ map solve solvableAlternatives
-    in if reducedIsSolved
-         then Just reduced
-         else case solvedAlternatives of (var:_) -> var
-                                         [] -> Nothing
+      solvedAlternatives = filter (isJust) $ map solve alternatives
+    in case status
+         of Solved -> Just reduced
+            Unsolvable -> Nothing
+            _ -> case solvedAlternatives of (var:_) -> var
+                                            [] -> Nothing
