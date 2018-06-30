@@ -2,10 +2,11 @@
 
 module Intelligence where
 import SudokuObject
-import Data.Vector ((!), (!?), find)
-import qualified Data.Vector as V
-import Data.List ((\\), sortBy)
-import Data.Maybe (isNothing,isJust)
+import Data.Vector ((!), toList)
+import Data.List ((\\), sortBy, find)
+import Data.Maybe (isNothing, isJust)
+
+import qualified Data.List as L
 
 import Debug.Trace
 
@@ -51,9 +52,9 @@ bestPermute board =
 data BoardStatus = Solvable | Solved | Unsolvable
 
 boardStatus board =
-  let filteredBoard = V.filter (\x -> case x of Unspecified _ -> True ; _ -> False) $ boardBoard board
+  let filteredBoard = filter (\x -> case x of Unspecified _ -> True ; _ -> False) $ toList $ boardBoard board
       solvable = isNothing $ find (\x -> case x of Unspecified [] -> True ; _ -> False) filteredBoard
-      solved = V.null filteredBoard
+      solved = L.null filteredBoard
     in if solved then Solved else if solvable then Solvable else Unsolvable
 
 solve board =
