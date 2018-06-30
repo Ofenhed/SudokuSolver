@@ -3,6 +3,7 @@
 module Intelligence where
 import SudokuObject
 import Data.Vector ((!), (!?), find)
+import qualified Data.Vector as V
 import Data.List ((\\), sortBy)
 import Data.Maybe (isNothing,isJust)
 
@@ -49,14 +50,11 @@ bestPermute board =
 
 data BoardStatus = Solvable | Solved | Unsolvable
 
-boardStatus board = checkStatus 0 Solved
-  where
-  b = boardBoard board
-  checkStatus i s = case b !? i
-                      of Nothing -> s
-                         Just (Unspecified []) -> Unsolvable
-                         Just (Unspecified _) -> checkStatus (i+1) Solvable
-                         _ -> checkStatus (i+1) s
+boardStatus board =
+  let filteredBoard = V.filter (\x -> case x of Unspecified _ -> True ; _ -> False) $ boardBoard board
+      solvable = isNothing $ find (\x -> case x of Unspecified [] -> True ; _ -> False) filteredBoard
+      solved = length filteredBoard == 0
+    in if solved then Solved else if solvable then Solvable else Unsolvable
 
 solve board =
   let reduced = reduceAll board
