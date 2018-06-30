@@ -1,1 +1,5 @@
-I was bored one morning when I had a cold, so I threw this together. Just replace puzzle.in with the sudoku you want solved.
+I was bored one morning when I had a cold, so I threw this together. Just create the file puzzle.in with the sudoku you want solved. The format is the numers from a challenge, with unknowns replaced with a dot, as such:
+
+1..3..572
+.2..7...1
+(etc)
