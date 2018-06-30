@@ -53,7 +53,7 @@ data BoardStatus = Solvable | Solved | Unsolvable
 boardStatus board =
   let filteredBoard = V.filter (\x -> case x of Unspecified _ -> True ; _ -> False) $ boardBoard board
       solvable = isNothing $ find (\x -> case x of Unspecified [] -> True ; _ -> False) filteredBoard
-      solved = length filteredBoard == 0
+      solved = V.null filteredBoard
     in if solved then Solved else if solvable then Solvable else Unsolvable
 
 solve board =
