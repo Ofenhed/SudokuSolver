@@ -7,5 +7,5 @@ import Intelligence
 main :: IO ()
 main = do
   board <- readFile "puzzle.in"
-  let b = readBoard board :: Board Int
+  let b = readBoard board :: Board
   putStrLn $ case solve b of Just b -> show b ; Nothing -> "Unsolvable"

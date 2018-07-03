@@ -3,7 +3,7 @@
 module Intelligence where
 import SudokuObject
 import Data.Vector ((!), toList)
-import Data.List ((\\), sortBy, find)
+import Data.List ((\\), minimumBy, find)
 import Data.Maybe (isNothing, isJust)
 
 import qualified Data.List as L
@@ -46,7 +46,7 @@ permute board pos =
 bestPermute board =
   let allFields = map (\pos -> (pos, boardBoard board ! coordToPos pos)) allCoords
       allUnspecified = filter (\(_, field) -> case field of Unspecified _ -> True ; _ -> False) allFields
-      (bestPos,_):_ = sortBy (\(_, Unspecified x) (_, Unspecified y) -> compare (length x) (length y)) allUnspecified
+      (bestPos,_) = minimumBy (\(_, Unspecified x) (_, Unspecified y) -> compare (length x) (length y)) allUnspecified
     in bestPos
 
 data BoardStatus = Solvable | Solved | Unsolvable

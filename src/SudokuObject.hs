@@ -4,17 +4,18 @@ import Data.Vector (Vector(..), (!), fromList, modify, toList)
 import Data.Vector.Mutable (write)
 import Data.List (find, concat, filter, sortBy)
 import Data.Maybe (isJust, isNothing)
+import Data.Int (Int8)
 
 boardMax = 9
 
-data Field t = Specified t
-             | Unspecified [t] deriving (Show)
+data Field = Specified Int8
+           | Unspecified [Int8] deriving (Show, Eq)
 
-data Board t = Board {boardBoard :: (Vector (Field t))}
+data Board = Board {boardBoard :: (Vector (Field))}
 
 coordToPos (x, y) = x + y * boardMax
 
-instance Show t => Show (Board t) where
+instance Show Board where
   show b = print' "" [(x, y) |
                                y <- [0..boardMax-1],
                                x <- [0..boardMax-1]
@@ -39,11 +40,11 @@ instance Show t => Show (Board t) where
         in print' (prev ++ d ++ replicate (maxLen - length d) ' ' ++ delimiter) xs
 
 readBoard d =
-  let unspec = Unspecified [1..boardMax]
+  let unspec = Unspecified [1..fromIntegral boardMax]
       b = map (\x -> if x == '.'
                        then unspec
                        else if x > '0' && x <= '9'
-                              then Specified (read [x] :: Int)
+                              then Specified (read [x] :: Int8)
                               else error "Unreadable config"
                   ) $ filter ((/=)'\n') d
     in Board {boardBoard = fromList b}
