@@ -1,29 +1,23 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Intelligence where
 import SudokuObject
 import Data.Vector ((!), toList)
 import Data.List ((\\), minimumBy, find, delete)
 import Data.Maybe (isNothing, isJust, mapMaybe)
+import Language.Haskell.TH.Syntax (lift)
 
 import qualified Data.List as L
 
 import Debug.Trace
 
-related (x,y) = let boxX = quot x 3
-                    boxY = quot y 3
-                    vertical = [(x,y') | y' <- [0..8], y' /= y]
-                    horizontal = [(x',y) | x' <- [0..8], x' /= x]
-                    othersInBox = [(x',y') | x' <- map ((+)$boxX*3) [0..2]
-                                           , y' <- map ((+)$boxY*3) [0..2]
-                                           , x /= x'
-                                           , y /= y']
-                  in vertical ++ horizontal ++ othersInBox
+relatedCached = $(lift $ map (related . posToCoord) [0..81])
 
 allCoords = [(x,y) | x <- [0..8], y <- [0..8]]
 
 reduce board (pos, me) =
-  let related' = related pos
+  let related' = relatedCached !! coordToPos pos
       specifiedRelated = mapMaybe (\pos -> case boardBoard board ! coordToPos pos
                                              of Specified c -> Just c
                                                 Unspecified _ -> Nothing) related'

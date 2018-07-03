@@ -13,7 +13,18 @@ data Field = Specified Int8
 
 data Board = Board {boardBoard :: (Vector (Field))}
 
+related (x,y) = let boxX = quot x 3
+                    boxY = quot y 3
+                    vertical = [(x,y') | y' <- [0..8], y' /= y]
+                    horizontal = [(x',y) | x' <- [0..8], x' /= x]
+                    othersInBox = [(x',y') | x' <- map ((+)(boxX*3)) [0..2]
+                                           , y' <- map ((+)(boxY*3)) [0..2]
+                                           , x /= x'
+                                           , y /= y']
+                  in vertical ++ horizontal ++ othersInBox
+
 coordToPos (x, y) = x + y * boardMax
+posToCoord pos = (mod pos boardMax, quot pos boardMax)
 
 instance Show Board where
   show b = print' "" [(x, y) |
