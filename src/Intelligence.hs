@@ -3,8 +3,8 @@
 module Intelligence where
 import SudokuObject
 import Data.Vector ((!), toList)
-import Data.List ((\\), minimumBy, find)
-import Data.Maybe (isNothing, isJust)
+import Data.List ((\\), minimumBy, find, delete)
+import Data.Maybe (isNothing, isJust, mapMaybe)
 
 import qualified Data.List as L
 
@@ -22,20 +22,23 @@ related (x,y) = let boxX = quot x 3
 
 allCoords = [(x,y) | x <- [0..8], y <- [0..8]]
 
-reduce board pos =
-  let Unspecified me = boardBoard board ! coordToPos pos
-      related' = related pos
-      others = map (((!) $ boardBoard board) . coordToPos) related'
-      specified = concat $ map (\x -> case x of Specified c -> [c] ; Unspecified _ -> []) others
-      possible = me \\ specified
+reduce board (pos, me) =
+  let related' = related pos
+      specifiedRelated = mapMaybe (\pos -> case boardBoard board ! coordToPos pos
+                                             of Specified c -> Just c
+                                                Unspecified _ -> Nothing) related'
+      possible = me \\ specifiedRelated
       newMe = case possible
                 of [val] -> Specified val
                    vals  -> Unspecified vals
     in updatePos board pos newMe
 
 reduceAll board =
-  let poi = filter (\x -> case boardBoard board ! coordToPos x of Unspecified _ -> True ; _ -> False) allCoords
-    in foldr (\pos b -> reduce b pos) board poi
+  let unspecifiedPositions = mapMaybe (\x -> case boardBoard board ! coordToPos x
+                                               of Unspecified l -> Just (x, l)
+                                                  _ -> Nothing)
+                                      allCoords
+    in foldr (\pos b -> reduce b pos) board unspecifiedPositions
 
 permute board pos =
   let Unspecified me = boardBoard board ! coordToPos pos
@@ -44,8 +47,10 @@ permute board pos =
     in alternativeBoards
 
 bestPermute board =
-  let allFields = map (\pos -> (pos, boardBoard board ! coordToPos pos)) allCoords
-      allUnspecified = filter (\(_, field) -> case field of Unspecified _ -> True ; _ -> False) allFields
+  let allUnspecified = mapMaybe (\pos -> case (boardBoard board ! coordToPos pos)
+                                           of v@(Unspecified _) -> Just (pos, v)
+                                              _ -> Nothing)
+                                allCoords
       (bestPos,_) = minimumBy (\(_, Unspecified x) (_, Unspecified y) -> compare (length x) (length y)) allUnspecified
     in bestPos
 
