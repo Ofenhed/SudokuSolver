@@ -1,8 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Intelligence where
 import SudokuObject
+import Data.Function (on)
 import Data.Vector ((!), toList)
 import Data.List ((\\), minimumBy, find, delete)
 import Data.Maybe (isNothing, isJust, mapMaybe)
@@ -32,7 +34,7 @@ reduceAll board =
                                                of Unspecified l -> Just (x, l)
                                                   _ -> Nothing)
                                       allCoords
-    in foldr (\pos b -> reduce b pos) board unspecifiedPositions
+    in foldr (flip reduce) board unspecifiedPositions
 
 permute board pos =
   let Unspecified me = boardBoard board ! coordToPos pos
@@ -41,18 +43,20 @@ permute board pos =
     in alternativeBoards
 
 bestPermute board =
-  let allUnspecified = mapMaybe (\pos -> case (boardBoard board ! coordToPos pos)
-                                           of v@(Unspecified _) -> Just (pos, v)
-                                              _ -> Nothing)
-                                allCoords
-      (bestPos,_) = minimumBy (\(_, Unspecified x) (_, Unspecified y) -> compare (length x) (length y)) allUnspecified
+  let allUnspecified = flip mapMaybe allCoords
+                                     $ \pos -> case boardBoard board ! coordToPos pos
+                                                 of Unspecified l -> Just (pos, length l)
+                                                    _ -> Nothing
+
+      (bestPos,_) = minimumBy (compare `on` snd)
+                              allUnspecified
     in bestPos
 
 data BoardStatus = Solvable | Solved | Unsolvable
 
 boardStatus board =
-  let filteredBoard = filter (\x -> case x of Unspecified _ -> True ; _ -> False) $ toList $ boardBoard board
-      solvable = isNothing $ find (\x -> case x of Unspecified [] -> True ; _ -> False) filteredBoard
+  let filteredBoard = filter (\case Unspecified _ -> True ; _ -> False) $ toList $ boardBoard board
+      solvable = isNothing $ find (\case Unspecified [] -> True ; _ -> False) filteredBoard
       solved = L.null filteredBoard
     in if solved then Solved else if solvable then Solvable else Unsolvable
 
@@ -60,7 +64,7 @@ solve board =
   let reduced = reduceAll board
       status = boardStatus reduced
       alternatives = permute reduced $ bestPermute reduced
-      solvedAlternatives = filter (isJust) $ map solve alternatives
+      solvedAlternatives = filter isJust $ map solve alternatives
     in case status
          of Solved -> Just reduced
             Unsolvable -> Nothing

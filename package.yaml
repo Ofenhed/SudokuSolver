@@ -1,0 +1,29 @@
+name:                SudokuSolver
+version:             0.1.0.0
+github:              "Ofenhed/SudokuSolver"
+license:             BSD3
+author:              "Marcus Ofenhed"
+maintainer:          "marcus@conditionraise.se"
+
+extra-source-files:
+- README
+
+dependencies:
+- base >= 4.9 && < 5
+
+library:
+  dependencies:
+    - vector
+    - template-haskell
+  source-dirs: src
+
+executables:
+  SudokuSolver-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - SudokuSolver

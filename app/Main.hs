@@ -8,4 +8,4 @@ main :: IO ()
 main = do
   board <- readFile "puzzle.in"
   let b = readBoard board :: Board
-  putStrLn $ case solve b of Just b -> show b ; Nothing -> "Unsolvable"
+  putStrLn $ maybe "Unsolvable" show $ solve b
