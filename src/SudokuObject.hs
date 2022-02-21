@@ -10,8 +10,9 @@ import Data.Int (Int8)
 
 boardMax = 9
 
-data Field = Specified Int8
-           | Unspecified [Int8] deriving (Show, Eq)
+type BoardValueType = Int8
+data Field = Specified BoardValueType
+           | Unspecified [BoardValueType] deriving (Show, Eq)
 
 newtype Board = Board {boardBoard :: Vector Field}
 
@@ -58,10 +59,10 @@ readBoard d =
       b = map (\x -> if x == '.'
                        then unspec
                        else if x > '0' && x <= '9'
-                              then Specified (read [x] :: Int8)
+                              then Specified (read [x] :: BoardValueType)
                               else error "Unreadable config"
                   ) $ filter ('\n' /=) d
     in Board {boardBoard = fromList b}
 
 updatePos board pos newVal = let board' = boardBoard board
-                              in Board {boardBoard = modify (\v -> write v (coordToPos pos) newVal) board'}
+                              in board {boardBoard = modify (\v -> write v (coordToPos pos) newVal) board'}
