@@ -2,17 +2,37 @@
 
 module SudokuObject where
 
-import Data.Vector (Vector(..), (!), fromList, modify, toList)
+import Data.Bits (testBit, popCount, bit, (.|.), clearBit)
+import Data.Int (Int8, Int16)
+import Data.List (find, concat, filter, sort)
+import Data.Maybe (isJust, isNothing, mapMaybe)
 import Data.Vector.Mutable (write)
-import Data.List (find, concat, filter, sortBy)
-import Data.Maybe (isJust, isNothing)
-import Data.Int (Int8)
+import Data.Vector (Vector(..), (!), fromList, modify, toList)
 
 boardMax = 9
 
 type BoardValueType = Int8
+type UnspecifiedBoardValueType = Int16
 data Field = Specified BoardValueType
-           | Unspecified [BoardValueType] deriving (Show, Eq)
+           | Unspecified UnspecifiedBoardValueType deriving (Show, Eq)
+
+unspecifiedOptions = [1..fromIntegral boardMax]
+fromUnspecified bitfield = filter (testBit bitfield . fromIntegral) unspecifiedOptions
+
+fieldFromUnspecified unspec = if unspecifiedLength unspec == 1
+                                 then Specified $ head $ fromUnspecified unspec
+                                 else Unspecified unspec
+
+toUnspecified :: (Integral a, Foldable t) => t a -> Field
+toUnspecified = Unspecified . foldr (\new state -> state .|. bit (fromIntegral new)) 0
+
+removeFromUnspecified :: (Foldable t) => UnspecifiedBoardValueType -> t BoardValueType -> UnspecifiedBoardValueType
+removeFromUnspecified = foldl (\ unspec x -> clearBit unspec (fromIntegral x))
+
+unspecifiedLength = popCount
+
+emptyUnspecified (Unspecified 0) = True
+emptyUnspecified _ = False
 
 newtype Board = Board {boardBoard :: Vector Field}
 
@@ -35,13 +55,14 @@ instance Show Board where
                                x <- [0..boardMax-1]
                      ]
     where
-    printList (Unspecified l) = concatMap show l
-    unspecifiedList = filter (\case Unspecified _ -> True ; _ -> False) $ toList $ boardBoard b
-    longestUnspecifiedList = sortBy (\(Unspecified x) (Unspecified y) -> compare (length y) (length x)) unspecifiedList
-    (Unspecified longestUnspecified):_ = longestUnspecifiedList
+    printList (Unspecified l) = concatMap show $ fromUnspecified l
+    unspecifiedList = mapMaybe (\case Unspecified unspecified -> Just unspecified ; _ -> Nothing)
+                               $ toList $ boardBoard b
+    longestUnspecifiedList = sort $ map unspecifiedLength unspecifiedList
+    longestUnspecified = head longestUnspecifiedList
     maxLen = if null unspecifiedList
                 then 1
-                else length longestUnspecified
+                else longestUnspecified
     print' prev [] = prev
     print' prev (pos@(x,y):xs) = do
       let field = boardBoard b ! coordToPos pos
@@ -55,7 +76,7 @@ instance Show Board where
         in print' (prev ++ d ++ replicate (maxLen - length d) ' ' ++ delimiter) xs
 
 readBoard d =
-  let unspec = Unspecified [1..fromIntegral boardMax]
+  let unspec = Unspecified $ bit (boardMax + 1) - 2 -- Set all bits up to boardMax except for bit 0
       b = map (\x -> if x == '.'
                        then unspec
                        else if x > '0' && x <= '9'

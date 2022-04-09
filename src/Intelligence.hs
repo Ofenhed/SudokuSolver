@@ -23,10 +23,8 @@ reduce board (pos, me) =
       specifiedRelated = mapMaybe (\pos -> case boardBoard board ! coordToPos pos
                                              of Specified c -> Just c
                                                 Unspecified _ -> Nothing) related'
-      possible = me \\ specifiedRelated
-      newMe = case possible
-                of [val] -> Specified val
-                   vals  -> Unspecified vals
+      possible = removeFromUnspecified me specifiedRelated
+      newMe = fieldFromUnspecified possible
     in updatePos board pos newMe
 
 reduceAll board =
@@ -38,14 +36,14 @@ reduceAll board =
 
 permute board pos =
   let Unspecified me = boardBoard board ! coordToPos pos
-      alternatives = map Specified me
+      alternatives = map Specified $ fromUnspecified me
       alternativeBoards = map (updatePos board pos) alternatives
     in alternativeBoards
 
 bestPermute board =
   let allUnspecified = flip mapMaybe allCoords
                                      $ \pos -> case boardBoard board ! coordToPos pos
-                                                 of Unspecified l -> Just (pos, length l)
+                                                 of Unspecified l -> Just (pos, unspecifiedLength l)
                                                     _ -> Nothing
 
       (bestPos,_) = minimumBy (compare `on` snd)
@@ -56,7 +54,7 @@ data BoardStatus = Solvable | Solved | Unsolvable
 
 boardStatus board =
   let filteredBoard = filter (\case Unspecified _ -> True ; _ -> False) $ toList $ boardBoard board
-      solvable = isNothing $ find (\case Unspecified [] -> True ; _ -> False) filteredBoard
+      solvable = isNothing $ find emptyUnspecified filteredBoard
       solved = L.null filteredBoard
     in if solved then Solved else if solvable then Solvable else Unsolvable
 
